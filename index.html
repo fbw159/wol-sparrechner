@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>Wake-on-LAN Sparrechner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#eef1f4; --surface:#ffffff; --surface-2:#f5f7f9;
+  --ink:#111a24; --ink-2:#465262; --muted:#6c7785;
+  --line:#dde2e8; --line-strong:#c2c9d2;
+  --work:#2a78d6; --on:#eb6834; --remote:#1baf7a; --sleep:#b3bbc6;
+  --accent:#2a78d6; --good:#006300; --led:#f0a020;
+  --shadow:0 1px 2px rgba(17,26,36,.06),0 4px 16px rgba(17,26,36,.05);
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0e1319; --surface:#161c24; --surface-2:#1b222b;
+    --ink:#eef2f6; --ink-2:#b5bec9; --muted:#8a95a2;
+    --line:#29313b; --line-strong:#3b4450;
+    --work:#3987e5; --on:#d95926; --remote:#199e70; --sleep:#525c69;
+    --accent:#5a9cf0; --good:#3cc15a; --led:#f0a020;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0e1319; --surface:#161c24; --surface-2:#1b222b;
+  --ink:#eef2f6; --ink-2:#b5bec9; --muted:#8a95a2;
+  --line:#29313b; --line-strong:#3b4450;
+  --work:#3987e5; --on:#d95926; --remote:#199e70; --sleep:#525c69;
+  --accent:#5a9cf0; --good:#3cc15a; --led:#f0a020;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:20px;padding-block:28px 48px;display:flex;flex-direction:column;gap:24px}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600}
+p{margin:0}
+a{color:var(--accent)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Kopf */
+.head{display:flex;flex-direction:column;gap:10px;max-width:780px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
+.led{width:9px;height:9px;border-radius:50%;background:var(--led);box-shadow:0 0 0 3px color-mix(in srgb,var(--led) 22%,transparent);animation:breathe 3.2s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.led{animation:none}}
+h1{font-size:clamp(26px,3.6vw,36px);line-height:1.15;letter-spacing:-.01em}
+.lead{color:var(--ink-2);font-size:16px;max-width:68ch}
+
+/* Kennzahlen */
+.kpis{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr);gap:12px}
+.hero,.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.hero{padding:20px 22px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
+.k-label{font-size:13px;color:var(--ink-2);font-weight:500}
+.hero-value{font-size:clamp(40px,6vw,58px);font-weight:600;line-height:1;letter-spacing:-.02em}
+.hero-value .u{font-size:.42em;font-weight:500;color:var(--ink-2);margin-left:6px;letter-spacing:0}
+.hero-sub{color:var(--ink-2);font-size:14px}
+.hero-sub b{color:var(--good);font-weight:600}
+.hero-actions{margin-top:auto;padding-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid var(--line-strong);background:var(--surface-2);border-radius:7px;padding:6px 12px;font-size:13px;font-weight:500;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.toast{font-size:13px;color:var(--good)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.tile-value{font-size:26px;font-weight:600;line-height:1.15;letter-spacing:-.01em}
+.tile-value .u{font-size:.6em;font-weight:500;color:var(--ink-2);margin-left:4px}
+.tile-note{font-size:12.5px;color:var(--muted)}
+
+/* Spalten */
+.cols{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:20px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 20px}
+.inputs{display:flex;flex-direction:column;gap:18px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panel-head h2{font-size:17px}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+legend{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0;margin-bottom:12px;width:100%;border-bottom:1px solid var(--line);padding-bottom:6px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.field-head label{font-size:14px;font-weight:500}
+.num{display:inline-flex;align-items:baseline;gap:5px;flex-shrink:0}
+.num input{width:76px;text-align:right;border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:3px 6px;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
+.num input:hover{border-color:var(--line-strong)}
+.unit{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:42px}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.4}
+input[type=range]{width:100%;margin:2px 0;accent-color:var(--accent);height:22px}
+
+.devtable{width:100%;border-collapse:collapse;font-size:13.5px}
+.devtable th{font-weight:500;color:var(--ink-2);font-size:12.5px;text-align:right;padding:0 0 6px 6px}
+.devtable th:first-child{text-align:left;padding-left:0}
+.devtable td{padding:6px 0 6px 6px;border-top:1px solid var(--line);vertical-align:top}
+.devtable td:first-child{padding-left:0}
+.devtable .rl{font-weight:500;font-size:13.5px}
+.devtable .rl small{display:block;font-weight:400;color:var(--muted);font-size:12px;line-height:1.35}
+.devtable input{width:64px;text-align:right;border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:3px 6px;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
+.devtable .cell{display:flex;justify-content:flex-end;align-items:baseline;gap:4px}
+.devtable .cu{font-family:var(--mono);font-size:11.5px;color:var(--muted);width:14px}
+.derived{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-radius:6px;padding:8px 10px}
+
+.results{display:flex;flex-direction:column;gap:20px;min-width:0}
+.card-head{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.card-head h2{font-size:17px}
+.card-head p{color:var(--ink-2);font-size:13.5px;max-width:70ch}
+
+/* Legende */
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-2);margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block;flex-shrink:0}
+.sw.work{background:var(--work)} .sw.on{background:var(--on)} .sw.remote{background:var(--remote)} .sw.sleep{background:var(--sleep)}
+
+/* Jahresstreifen */
+.strips{display:flex;flex-direction:column;gap:12px}
+.strip-row{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;align-items:center}
+.strip-label{font-size:13px;font-weight:500;color:var(--ink-2)}
+.strip{display:flex;gap:2px;height:30px;border-radius:4px;overflow:hidden}
+.seg{flex-shrink:0;flex-basis:0;min-width:2px;position:relative;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:500;white-space:nowrap;cursor:default}
+.seg.work{background:var(--work);color:#fff}
+.seg.on{background:var(--on);color:#231006}
+.seg.remote{background:var(--remote)}
+.seg.sleep{background:var(--sleep);color:var(--ink)}
+.seg .sl{padding:0 6px}
+.strip-axis{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px}
+.strip-axis div{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* Balken vorher/nachher */
+.bars{display:flex;flex-direction:column;gap:14px;position:relative}
+.bar-row{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;align-items:center}
+.bar-track{position:relative;height:24px}
+.bar{display:flex;gap:2px;height:24px;border-radius:0 4px 4px 0;overflow:hidden;position:relative;z-index:1}
+.bar .seg{height:100%}
+.bar-val{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap;padding-left:8px;z-index:1}
+.grid-lines{position:absolute;inset:0;pointer-events:none}
+.grid-lines i{position:absolute;top:-4px;bottom:-4px;width:1px;background:var(--line)}
+.bar-axis{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;margin-top:4px}
+.bar-axis .ticks{position:relative;height:16px;font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar-axis .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.bar-axis .ticks span:first-child{transform:none}
+.chart-body{position:relative}
+
+/* Tabelle */
+.tscroll{overflow-x:auto}
+table.res{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+table.res th{text-align:right;font-weight:500;color:var(--ink-2);font-size:12.5px;padding:0 0 8px 12px;vertical-align:bottom}
+table.res th:first-child,table.res td:first-child{text-align:left;padding-left:0}
+table.res td{text-align:right;padding:8px 0 8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+table.res tr.sum td{font-weight:600;border-top:1px solid var(--line-strong)}
+
+/* Methode und Quellen */
+.method-f h2,.sources h2{font-size:17px;margin-bottom:12px}
+.sources .src{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 28px}
+.formula{display:flex;flex-direction:column;gap:12px}
+.formula .f{font-size:14px}
+.formula .f b{font-weight:600}
+.formula code{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-radius:5px;padding:6px 8px;display:block;margin-top:4px;overflow-wrap:anywhere}
+.src{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13.5px}
+.src li{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.src .v{font-weight:500}
+.src .s{color:var(--muted);font-size:12.5px}
+.note{font-size:13px;color:var(--ink-2);margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+footer{font-size:12px;color:var(--muted)}
+
+/* Tooltip */
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12.5px;line-height:1.4;padding:7px 10px;border-radius:6px;max-width:260px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.tip b{font-weight:600}
+
+@media (max-width:900px){
+  .kpis{grid-template-columns:minmax(0,1fr)}
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .sources .src{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:480px){
+  .wrap{padding-inline:16px}
+  .tiles{gap:8px}
+  .tile{padding:12px}
+  .tile-value{font-size:22px}
+  .strip-row,.bar-row,.strip-axis,.bar-axis{grid-template-columns:58px minmax(0,1fr);gap:8px}
+}
+</style>
+
+<main class="wrap">
+  <header class="head">
+    <div class="eyebrow"><span class="led" aria-hidden="true"></span>Bürogebäude · Abschätzung für ein Jahr</div>
+    <h1>Wie viel Strom spart Wake-on-LAN?</h1>
+    <p class="lead">Viele lassen ihren Büro-PC rund um die Uhr laufen, damit sie von zu Hause darauf zugreifen können. Mit Wake-on-LAN (WoL) darf der PC außerhalb der Arbeitszeit schlafen und wird nur geweckt, wenn jemand ihn wirklich braucht.</p>
+  </header>
+
+  <section class="kpis" aria-label="Ergebnis">
+    <div class="hero">
+      <span class="k-label">Einsparung pro Jahr</span>
+      <div class="hero-value" id="k_kwh">–</div>
+      <p class="hero-sub" id="k_sub">–</p>
+      <div class="hero-actions">
+        <button type="button" class="btn" id="copyBtn">Ergebnis als Text kopieren</button>
+        <span class="toast" id="toast" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><span class="k-label">Stromkosten</span><div class="tile-value" id="k_eur">–</div><span class="tile-note" id="k_eur_n">–</span></div>
+      <div class="tile"><span class="k-label">CO₂</span><div class="tile-value" id="k_co2">–</div><span class="tile-note" id="k_co2_n">–</span></div>
+      <div class="tile"><span class="k-label">Pro Mitarbeitendem</span><div class="tile-value" id="k_pp">–</div><span class="tile-note">Mittel über alle, auch die, die abschalten</span></div>
+      <div class="tile"><span class="k-label">PCs, die neu schlafen dürfen</span><div class="tile-value" id="k_pcs">–</div><span class="tile-note" id="k_pcs_n">–</span></div>
+    </div>
+  </section>
+
+  <div class="cols">
+    <form class="panel inputs" id="form" autocomplete="off">
+      <div class="panel-head">
+        <h2>Annahmen</h2>
+        <button type="button" class="btn" id="resetBtn">Startwerte</button>
+      </div>
+      <fieldset id="fs_gen"><legend>Gebäude und Nutzung</legend></fieldset>
+      <fieldset id="fs_dev">
+        <legend>Rechner</legend>
+        <table class="devtable">
+          <thead><tr><th></th><th scope="col">Büro-PC</th><th scope="col">Workstation</th></tr></thead>
+          <tbody id="devbody"></tbody>
+        </table>
+        <p class="derived" id="derived">–</p>
+      </fieldset>
+      <fieldset id="fs_power"><legend>Strom</legend></fieldset>
+    </form>
+
+    <div class="results">
+      <section class="panel">
+        <div class="card-head">
+          <h2>Ein Jahr eines PCs, der heute immer läuft</h2>
+          <p id="strip_sub">–</p>
+        </div>
+        <div class="chart-body">
+          <div class="strips">
+            <div class="strip-row"><span class="strip-label">Heute</span><div class="strip" id="strip_now"></div></div>
+            <div class="strip-row"><span class="strip-label">Mit WoL</span><div class="strip" id="strip_wol"></div></div>
+            <div class="strip-axis"><span></span><div><span>0 h</span><span>4.380 h</span><span>8.760 h</span></div></div>
+          </div>
+          <div class="legend">
+            <span><i class="sw work"></i>Arbeitszeit (in beiden Fällen gleich)</span>
+            <span><i class="sw remote"></i>Fernzugriff</span>
+            <span><i class="sw on"></i>läuft ohne Nutzer</span>
+            <span><i class="sw sleep"></i>Ruhezustand</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="card-head">
+          <h2>Stromverbrauch aller PCs außerhalb der Arbeitszeit</h2>
+          <p>Nachts, am Wochenende, an Feiertagen und im Urlaub, in kWh pro Jahr. Die Arbeitszeit selbst ändert sich durch WoL nicht und ist deshalb nicht enthalten.</p>
+        </div>
+        <div class="chart-body">
+          <div class="bars" id="bars"></div>
+          <div class="bar-axis"><span></span><div class="ticks" id="ticks"></div></div>
+          <div class="legend">
+            <span><i class="sw on"></i>PC läuft ohne Nutzer</span>
+            <span><i class="sw remote"></i>Fernzugriff</span>
+            <span><i class="sw sleep"></i>Ruhezustand / aus</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="card-head">
+          <h2>Aufteilung nach Rechnertyp</h2>
+        </div>
+        <div class="tscroll">
+          <table class="res">
+            <thead><tr>
+              <th scope="col"></th><th scope="col">PCs</th><th scope="col">laufen heute immer</th><th scope="col">schlafen mit WoL</th><th scope="col">Einsparung je PC</th><th scope="col">Einsparung gesamt</th><th scope="col">Kosten</th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="panel method-f">
+      <h2>So wird gerechnet</h2>
+        <div class="formula" id="formula"></div>
+        <p class="note">Nicht eingerechnet: Monitore (gehen ohnehin in Standby), Netzwerktechnik und der Aufwand für die Einrichtung. Voraussetzung für WoL: Funktion im BIOS/UEFI und in der Netzwerkkarte aktiv, Energiesparplan schickt den PC nach kurzer Zeit ohne Nutzung in den Ruhezustand, und es gibt einen Weg, ihn von außen zu wecken (z. B. über VPN oder ein Portal der IT).</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel sources">
+      <h2>Startwerte und Quellen</h2>
+    <ul class="src">
+      <li><span class="v">Läuft immer: 35 % der Büro-PCs, 50 % der Workstations</span><span class="s">Umfrage 1E / Alliance to Save Energy: 44 % fahren den PC nicht immer herunter, 22 % davon, weil jemand darauf zugreifen könnte (<a href="https://www.cio.de/article/3660676/pc-anlassen-ueber-nacht-kostet-millionen.html" target="_blank" rel="noopener">CIO</a>). Messung an der UC Irvine: Büro-PCs 76 % des Tages an, nur 16 % genutzt; Gründe u. a. Fernzugriff und Updates (<a href="https://www.calit2.uci.edu/2014/10/29/post-studyrevealssurprisingresults" target="_blank" rel="noopener">UCI</a>). Workstations höher angesetzt, weil dort öfter Rechnungen laufen.</span></li>
+      <li><span class="v">Muss trotzdem laufen: 10 % bzw. 30 %</span><span class="s">Eigene Annahme – Simulationen über Nacht, Messrechner, kleine Dienste.</span></li>
+      <li><span class="v">Leerlauf: 30 W Büro-PC, 80 W Workstation</span><span class="s">ENERGY STAR: die meisten Desktops lagen im Leerlauf bei 30–60 W (<a href="https://www.energystar.gov/sites/default/files/Draft2_Idle_Level_Rationale.pdf" target="_blank" rel="noopener">EPA</a>); neue Büro-PCs liegen deutlich darunter. 30 W als Mittel für einen gemischten Bestand, Workstation mit Grafikkarte eigene Annahme.</span></li>
+      <li><span class="v">Ruhezustand mit WoL: 2 W bzw. 3 W</span><span class="s">EU-Verordnung 617/2013: höchstens 5,7 W im Ruhezustand und 1,7 W im Aus-Zustand, jeweils mit WoL (<a href="https://www.umweltbundesamt.de/sites/default/files/medien/376/dokumente/datenblatt_oekodesign-richtlinie_computer_und_computerserver.pdf" target="_blank" rel="noopener">UBA-Datenblatt</a>).</span></li>
+      <li><span class="v">Strompreis: 25 ct/kWh</span><span class="s">BDEW 2026: 17,2 ct/kWh im Liefervertrag für kleine und mittlere Betriebe (<a href="https://www.bdew.de/service/daten-und-grafiken/bdew-strompreisanalyse/" target="_blank" rel="noopener">BDEW</a>); mit weiteren Preisbestandteilen eher höher – bitte den eigenen Tarif eintragen.</span></li>
+      <li><span class="v">CO₂: 344 g/kWh</span><span class="s">Deutscher Strommix 2025 laut <a href="https://www.umweltbundesamt.de/themen/co2-emissionen-pro-kilowattstunde-strom-2025-nur" target="_blank" rel="noopener">Umweltbundesamt</a>.</span></li>
+      <li><span class="v">220 Arbeitstage, 9 h am Tag, 3 h Fernzugriff pro Woche</span><span class="s">260 Werktage − 30 Urlaubstage − rund 10 Feiertage. Fernzugriff inkl. der Zeit, bis der PC wieder einschläft.</span></li>
+    </ul>
+  </section>
+
+  <footer>Abschätzung mit Startwerten, Stand September 2026. Alle Annahmen lassen sich ändern; eigene Werte merkt sich der Browser.</footer>
+</main>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(function(){
+  const GEN = [
+    {id:'n_ma',  label:'Mitarbeitende', unit:'Pers.', min:10, max:5000, step:10, def:200, hint:'Ein PC je Person'},
+    {id:'ws',    label:'Anteil Workstations', unit:'%', min:0, max:100, step:5, def:15, hint:'Rechner mit Grafikkarte, z. B. für CAD oder Simulation'},
+    {id:'days',  label:'Arbeitstage pro Jahr', unit:'Tage', min:150, max:260, step:1, def:220, hint:'260 Werktage minus Urlaub und Feiertage'},
+    {id:'hday',  label:'Stunden am Arbeitsplatz pro Tag', unit:'h', min:4, max:14, step:0.5, def:9, hint:'inkl. Pausen – in dieser Zeit läuft der PC in beiden Fällen'},
+    {id:'remote',label:'Fernzugriff außerhalb der Arbeitszeit', unit:'h/Wo.', min:0, max:20, step:0.5, def:3, hint:'je PC, inkl. Zeit, bis er wieder einschläft'}
+  ];
+  const POWER = [
+    {id:'price', label:'Strompreis', unit:'ct/kWh', min:10, max:60, step:1, def:25, hint:'netto, eigenen Tarif eintragen'},
+    {id:'co2',   label:'CO₂ je kWh Strom', unit:'g/kWh', min:0, max:800, step:1, def:344, hint:'deutscher Strommix 2025 (UBA)'}
+  ];
+  const DEV = [
+    {k:'d',  label:'Läuft immer', sub:'für Fernzugriff, Updates, aus Bequemlichkeit', unit:'%', min:0, max:100, step:5, b:35, w:50},
+    {k:'m',  label:'… davon muss trotzdem laufen', sub:'Rechnungen über Nacht, Messungen, Dienste', unit:'%', min:0, max:100, step:5, b:10, w:30},
+    {k:'pi', label:'Leistung im Leerlauf', sub:'PC an, niemand arbeitet', unit:'W', min:1, max:400, step:1, b:30, w:80},
+    {k:'ps', label:'Leistung im Ruhezustand', sub:'mit aktivem WoL', unit:'W', min:0, max:20, step:0.5, b:2, w:3}
+  ];
+  const STORE = 'wol-sparrechner-v1';
+  const $ = id => document.getElementById(id);
+  const nf = (v, d=0) => v.toLocaleString('de-DE',{minimumFractionDigits:d, maximumFractionDigits:d});
+  const round = (v, to) => Math.round(v/to)*to;
+
+  // ---------- Felder bauen ----------
+  function fieldHTML(p){
+    return `<div class="field">
+      <div class="field-head"><label for="${p.id}_n">${p.label}</label>
+      <span class="num"><input type="number" id="${p.id}_n" min="${p.min}" max="${p.max}" step="${p.step}" inputmode="decimal"><span class="unit">${p.unit}</span></span></div>
+      <input type="range" id="${p.id}" min="${p.min}" max="${p.max}" step="${p.step}" aria-label="${p.label}">
+      <p class="hint">${p.hint}</p></div>`;
+  }
+  $('fs_gen').insertAdjacentHTML('beforeend', GEN.map(fieldHTML).join(''));
+  $('fs_power').insertAdjacentHTML('beforeend', POWER.map(fieldHTML).join(''));
+  $('devbody').innerHTML = DEV.map(r => `<tr>
+      <td class="rl">${r.label}<small>${r.sub}</small></td>
+      <td><span class="cell"><input type="number" id="b_${r.k}" min="${r.min}" max="${r.max}" step="${r.step}" aria-label="${r.label} – Büro-PC" inputmode="decimal"><span class="cu">${r.unit}</span></span></td>
+      <td><span class="cell"><input type="number" id="w_${r.k}" min="${r.min}" max="${r.max}" step="${r.step}" aria-label="${r.label} – Workstation" inputmode="decimal"><span class="cu">${r.unit}</span></span></td>
+    </tr>`).join('');
+
+  function defaults(){
+    const s = {};
+    GEN.concat(POWER).forEach(p => s[p.id] = p.def);
+    DEV.forEach(r => { s['b_'+r.k] = r.b; s['w_'+r.k] = r.w; });
+    return s;
+  }
+  function limits(id){
+    const p = GEN.concat(POWER).find(x => x.id === id);
+    if (p) return p;
+    const r = DEV.find(x => 'b_'+x.k === id || 'w_'+x.k === id);
+    return r;
+  }
+  let state = defaults();
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (saved && typeof saved === 'object') Object.keys(state).forEach(k => { if (typeof saved[k] === 'number' && isFinite(saved[k])) state[k] = saved[k]; });
+  } catch(e) {}
+
+  function writeInputs(){
+    GEN.concat(POWER).forEach(p => { $(p.id).value = state[p.id]; $(p.id+'_n').value = state[p.id]; });
+    DEV.forEach(r => { $('b_'+r.k).value = state['b_'+r.k]; $('w_'+r.k).value = state['w_'+r.k]; });
+  }
+  function setVal(id, raw){
+    const lim = limits(id);
+    let v = parseFloat(String(raw).replace(',', '.'));
+    if (!isFinite(v)) return false;
+    v = Math.min(lim.max, Math.max(lim.min, v));
+    state[id] = v;
+    return true;
+  }
+
+  $('form').addEventListener('input', e => {
+    const t = e.target; if (!t.id) return;
+    const isNum = t.id.endsWith('_n');
+    const id = isNum ? t.id.slice(0,-2) : t.id;
+    if (!setVal(id, t.value)) return;
+    if (t.type === 'range') { $(id+'_n').value = state[id]; }
+    else if (isNum) { $(id).value = state[id]; }
+    update();
+  });
+  $('form').addEventListener('change', e => { writeInputs(); });
+  $('form').addEventListener('submit', e => e.preventDefault());
+  $('resetBtn').addEventListener('click', () => { state = defaults(); writeInputs(); update(); });
+
+  // ---------- Rechnung ----------
+  function calc(s){
+    const offH = Math.max(0, 8760 - s.days * s.hday);
+    const R = Math.min(offH, s.remote * 52);
+    const types = [
+      {name:'Büro-PC', n: s.n_ma * (1 - s.ws/100), d:s.b_d/100, m:s.b_m/100, pi:s.b_pi, ps:s.b_ps},
+      {name:'Workstation', n: s.n_ma * s.ws/100, d:s.w_d/100, m:s.w_m/100, pi:s.w_pi, ps:s.w_ps}
+    ];
+    const agg = {before:{on:0,remote:0,sleep:0}, after:{on:0,remote:0,sleep:0}, save:0, always:0, sw:0};
+    types.forEach(t => {
+      const S = t.n * t.d * (1 - t.m);      // können auf WoL umstellen
+      const T = t.n * t.d * t.m;            // müssen weiterlaufen
+      const A = t.n * (1 - t.d);            // schalten sowieso ab
+      const dP = Math.max(0, t.pi - t.ps);
+      t.always = t.n * t.d; t.sw = S;
+      t.perPC = (offH - R) * dP / 1000;
+      t.save = S * t.perPC;
+      agg.before.on += (S*(offH-R) + T*offH) * t.pi / 1000;
+      agg.before.remote += S * R * t.pi / 1000;
+      agg.before.sleep += A * offH * t.ps / 1000;
+      agg.after.on += T * offH * t.pi / 1000;
+      agg.after.remote += S * R * t.pi / 1000;
+      agg.after.sleep += (A * offH + S * (offH - R)) * t.ps / 1000;
+      agg.save += t.save; agg.always += t.always; agg.sw += S;
+    });
+    agg.beforeTot = agg.before.on + agg.before.remote + agg.before.sleep;
+    agg.afterTot = agg.after.on + agg.after.remote + agg.after.sleep;
+    agg.pct = agg.beforeTot > 0 ? agg.save / agg.beforeTot : 0;
+    agg.eur = agg.save * s.price / 100;
+    agg.t = agg.save * s.co2 / 1e6;
+    return {offH, R, workH: 8760 - offH, types, agg};
+  }
+
+  // ---------- Hilfen ----------
+  function kwhNice(v){ return v >= 1000 ? nf(round(v, 100)) : v >= 100 ? nf(round(v,10)) : nf(Math.round(v)); }
+  function eurNice(v){ return v >= 1000 ? nf(round(v, 10)) : nf(Math.round(v)); }
+  function niceStep(max){
+    const raw = max / 4; const mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+    const n = raw / mag; const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+    return step;
+  }
+  function segHTML(cls, value, tip, label){
+    return `<div class="seg ${cls}" style="flex-grow:${value}" data-tip="${tip}">${label ? `<span class="sl">${label}</span>` : ''}</div>`;
+  }
+  function fitLabels(root){
+    root.querySelectorAll('.seg').forEach(seg => {
+      const sl = seg.querySelector('.sl'); if (!sl) return;
+      sl.style.visibility = 'visible';
+      if (sl.scrollWidth + 4 > seg.clientWidth) sl.style.visibility = 'hidden';
+    });
+  }
+
+  // ---------- Darstellung ----------
+  let last;
+  function update(){
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch(e) {}
+    const r = calc(state); last = r;
+    const a = r.agg, s = state;
+
+    // Kennzahlen
+    $('k_kwh').innerHTML = `${kwhNice(a.save)}<span class="u">kWh</span>`;
+    $('k_sub').innerHTML = `<b>−${nf(a.pct*100)} %</b> Stromverbrauch der PCs außerhalb der Arbeitszeit (${kwhNice(a.beforeTot)} → ${kwhNice(a.afterTot)} kWh)`;
+    $('k_eur').innerHTML = `${eurNice(a.eur)}<span class="u">€</span>`;
+    $('k_eur_n').textContent = `bei ${nf(s.price)} ct/kWh`;
+    $('k_co2').innerHTML = `${nf(a.t, a.t < 10 ? 1 : 0)}<span class="u">t</span>`;
+    $('k_co2_n').textContent = `bei ${nf(s.co2)} g CO₂/kWh`;
+    $('k_pp').innerHTML = `${nf(Math.round(a.save / s.n_ma))}<span class="u">kWh</span>`;
+    $('k_pcs').innerHTML = `${nf(Math.round(a.sw))}<span class="u">von ${nf(Math.round(s.n_ma))}</span>`;
+    $('k_pcs_n').textContent = `${nf(Math.round(a.always))} laufen heute immer`;
+
+    // Abgeleitet
+    $('derived').textContent = `Schalten abends ohnehin ab: ${nf(100 - s.b_d)} % der Büro-PCs und ${nf(100 - s.w_d)} % der Workstations. Für diese ändert sich durch WoL nichts.`;
+
+    // Jahresstreifen
+    const idle = r.offH - r.R;
+    const pc = h => nf(h / 87.6) + ' %';
+    $('strip_sub').textContent = `${nf(Math.round(r.workH))} h Arbeitszeit, ${nf(Math.round(r.R))} h Fernzugriff – die übrigen ${nf(Math.round(idle))} h (${pc(idle)} des Jahres) läuft der PC heute ohne Nutzer.`;
+    $('strip_now').innerHTML =
+      segHTML('work', r.workH, `<b>Arbeitszeit</b><br>${nf(Math.round(r.workH))} h`, pc(r.workH)) +
+      segHTML('remote', r.R, `<b>Fernzugriff</b><br>${nf(Math.round(r.R))} h`, '') +
+      segHTML('on', idle, `<b>Läuft ohne Nutzer</b><br>${nf(Math.round(idle))} h · ${pc(idle)} des Jahres`, pc(idle));
+    $('strip_wol').innerHTML =
+      segHTML('work', r.workH, `<b>Arbeitszeit</b><br>${nf(Math.round(r.workH))} h`, pc(r.workH)) +
+      segHTML('remote', r.R, `<b>Fernzugriff – per WoL geweckt</b><br>${nf(Math.round(r.R))} h`, '') +
+      segHTML('sleep', idle, `<b>Ruhezustand</b><br>${nf(Math.round(idle))} h · ${pc(idle)} des Jahres`, pc(idle));
+
+    // Balken
+    const max = Math.max(a.beforeTot, 1);
+    const step = niceStep(max);
+    // Platz für die Wertbeschriftung rechts neben dem längsten Balken lassen
+    const labelCol = window.innerWidth <= 480 ? 66 : 88;
+    const trackW = Math.max(160, $('bars').clientWidth - labelCol);
+    const need = max * trackW / Math.max(60, trackW - 96);
+    const axisMax = Math.ceil(need / step) * step;
+    const w = v => (v / axisMax * 100).toFixed(3) + '%';
+    const barRow = (label, parts, tot) => {
+      const segs = parts.filter(p => p.v > 0).map(p => segHTML(p.cls, p.v, `<b>${label}: ${p.name}</b><br>${kwhNice(p.v)} kWh/Jahr`, '')).join('');
+      return `<div class="bar-row"><span class="strip-label">${label}</span>
+        <div class="bar-track"><div class="bar" style="width:${w(tot)}">${segs}</div>
+        <span class="bar-val" style="left:${w(tot)}">${kwhNice(tot)} kWh</span></div></div>`;
+    };
+    let grid = '';
+    for (let v = 0; v <= axisMax + 1e-9; v += step) grid += `<i style="left:${w(v)}"></i>`;
+    $('bars').innerHTML =
+      barRow('Heute', [{cls:'on',name:'läuft ohne Nutzer',v:a.before.on},{cls:'remote',name:'Fernzugriff',v:a.before.remote},{cls:'sleep',name:'Ruhezustand / aus',v:a.before.sleep}], a.beforeTot) +
+      barRow('Mit WoL', [{cls:'on',name:'läuft ohne Nutzer (muss laufen)',v:a.after.on},{cls:'remote',name:'Fernzugriff',v:a.after.remote},{cls:'sleep',name:'Ruhezustand / aus',v:a.after.sleep}], a.afterTot);
+    $('bars').querySelectorAll('.bar-track').forEach(t => t.insertAdjacentHTML('afterbegin', `<div class="grid-lines">${grid}</div>`));
+    let ticks = '';
+    for (let v = 0; v <= axisMax + 1e-9; v += step) ticks += `<span style="left:${w(v)}">${nf(v)}</span>`;
+    $('ticks').innerHTML = ticks;
+    // letzte Achsenbeschriftung nicht über den Rand schieben
+    const lastTick = $('ticks').lastElementChild; if (lastTick) { lastTick.style.transform = 'translateX(-100%)'; }
+
+    // Tabelle
+    const rows = r.types.map(t => `<tr><td>${t.name}</td><td>${nf(Math.round(t.n))}</td><td>${nf(Math.round(t.always))}</td><td>${nf(Math.round(t.sw))}</td><td>${nf(Math.round(t.perPC))} kWh</td><td>${kwhNice(t.save)} kWh</td><td>${eurNice(t.save * s.price / 100)} €</td></tr>`).join('');
+    $('tbody').innerHTML = rows + `<tr class="sum"><td>Summe</td><td>${nf(Math.round(s.n_ma))}</td><td>${nf(Math.round(a.always))}</td><td>${nf(Math.round(a.sw))}</td><td></td><td>${kwhNice(a.save)} kWh</td><td>${eurNice(a.eur)} €</td></tr>`;
+
+    // Formel mit aktuellen Zahlen
+    const b = r.types[0];
+    $('formula').innerHTML = `
+      <div class="f"><b>1. Stunden außerhalb der Arbeitszeit</b><code>8.760 h − ${nf(s.days)} Tage × ${nf(s.hday,1)} h = ${nf(Math.round(r.offH))} h</code></div>
+      <div class="f"><b>2. Davon schläft ein umgestellter PC</b><code>${nf(Math.round(r.offH))} h − ${nf(s.remote,1)} h/Woche × 52 Fernzugriff = ${nf(Math.round(idle))} h</code></div>
+      <div class="f"><b>3. Einsparung je Büro-PC</b><code>${nf(Math.round(idle))} h × (${nf(b.pi)} W − ${nf(b.ps,1)} W) = ${nf(Math.round(b.perPC))} kWh/Jahr</code></div>
+      <div class="f"><b>4. Anzahl umgestellter Büro-PCs</b><code>${nf(s.n_ma)} × ${nf(100 - s.ws)} % Büro-PCs × ${nf(s.b_d)} % laufen immer × ${nf(100 - s.b_m)} % dürfen schlafen = ${nf(b.sw,1)}</code></div>
+      <div class="f">Das Gleiche für die Workstations, dann beides zusammenzählen. Kosten = kWh × Strompreis, CO₂ = kWh × Emissionsfaktor.</div>`;
+
+    requestAnimationFrame(() => { fitLabels($('strip_now')); fitLabels($('strip_wol')); });
+  }
+
+  // ---------- Tooltip ----------
+  const tip = $('tip');
+  function showTip(el, x, y){
+    tip.innerHTML = el.dataset.tip; tip.hidden = false;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = x + 14, top = y - th - 12;
+    if (left + tw > window.innerWidth - 8) left = x - tw - 14;
+    if (left < 8) left = 8;
+    if (top < 8) top = y + 16;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  document.addEventListener('pointermove', e => {
+    const el = e.target.closest && e.target.closest('[data-tip]');
+    if (el) showTip(el, e.clientX, e.clientY); else if (e.pointerType === 'mouse') tip.hidden = true;
+  });
+  document.addEventListener('pointerdown', e => {
+    const el = e.target.closest && e.target.closest('[data-tip]');
+    if (el) showTip(el, e.clientX, e.clientY); else tip.hidden = true;
+  });
+  document.addEventListener('scroll', () => { tip.hidden = true; }, {passive:true});
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(update, 80); });
+
+  // ---------- Kopieren ----------
+  $('copyBtn').addEventListener('click', () => {
+    const a = last.agg, s = state;
+    const text = `Wake-on-LAN – Abschätzung für ${nf(s.n_ma)} Mitarbeitende: rund ${kwhNice(a.save)} kWh Strom pro Jahr weniger (ca. ${eurNice(a.eur)} € bei ${nf(s.price)} ct/kWh, ca. ${nf(a.t, a.t < 10 ? 1 : 0)} t CO₂). Grundlage: ${nf(Math.round(a.sw))} PCs, die heute immer laufen, gehen außerhalb der Arbeitszeit in den Ruhezustand und werden nur für den Fernzugriff geweckt. Der Stromverbrauch der PCs außerhalb der Arbeitszeit sinkt damit um ${nf(a.pct*100)} %.`;
+    const done = msg => { $('toast').textContent = msg; setTimeout(() => $('toast').textContent = '', 2500); };
+    try {
+      navigator.clipboard.writeText(text).then(() => done('Kopiert'), () => fallback(text, done));
+    } catch(e) { fallback(text, done); }
+  });
+  function fallback(text, done){
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly','');
+    ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(e) {}
+    ta.remove(); done(ok ? 'Kopiert' : 'Kopieren nicht möglich');
+  }
+
+  writeInputs();
+  update();
+})();
+</script>
+
+</body>
+</html>
